@@ -51,7 +51,14 @@ class UnivariateGaussian:
         Sets `self.mu_`, `self.var_` attributes according to calculated estimation (where
         estimator is either biased or unbiased). Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
+        sample_len = X.shape[0]
+        self.mu_ = np.mean(X)
+
+        var_sum = np.sum(np.power(X - self.mu_, 2))
+        if self.biased_:
+            self.var_ = var_sum / sample_len
+        else:
+            self.var_ = var_sum / (sample_len - 1)
 
         self.fitted_ = True
         return self
@@ -76,7 +83,8 @@ class UnivariateGaussian:
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
-        raise NotImplementedError()
+
+        return np.exp(-np.power(X - self.mu_, 2) / 2*self.var_) / np.sqrt(2*np.pi*self.var_)
 
     @staticmethod
     def log_likelihood(mu: float, sigma: float, X: np.ndarray) -> float:
@@ -97,8 +105,7 @@ class UnivariateGaussian:
         log_likelihood: float
             log-likelihood calculated
         """
-        raise NotImplementedError()
-
+        return -np.sum(np.power(X - mu, 2)) / (2 * sigma * np.log(np.power(2*np.pi*sigma, X.shape[0]/2)))
 
 class MultivariateGaussian:
     """
@@ -143,7 +150,9 @@ class MultivariateGaussian:
         Sets `self.mu_`, `self.cov_` attributes according to calculated estimation.
         Then sets `self.fitted_` attribute to `True`
         """
-        raise NotImplementedError()
+        self.mu_ = np.mean(X, axis=0)
+        centered_X = X - self.mu_
+        self.cov_ = np.matmul(centered_X.T, centered_X) / (X.shape[1] - 1)
 
         self.fitted_ = True
         return self
@@ -168,7 +177,10 @@ class MultivariateGaussian:
         """
         if not self.fitted_:
             raise ValueError("Estimator must first be fitted before calling `pdf` function")
-        raise NotImplementedError()
+        centered_X = X - self.mu_
+        numerator = np.exp(-(np.matmul(np.matmul(centered_X, np.linalg.inv(self.cov_)), centered_X.T))/2)
+        denominator = np.sqrt(np.power(2 * np.pi, X.shape[1]) * np.linalg.det(self.cov_))
+        return numerator / denominator
 
     @staticmethod
     def log_likelihood(mu: np.ndarray, cov: np.ndarray, X: np.ndarray) -> float:
@@ -189,4 +201,8 @@ class MultivariateGaussian:
         log_likelihood: float
             log-likelihood calculated over all input data and under given parameters of Gaussian
         """
-        raise NotImplementedError()
+        centered_X = X - mu
+        numerator = -np.sum(np.diagonal(np.matmul(np.matmul(centered_X, np.linalg.inv(cov)), centered_X.T))) / 2
+        denominator = np.log(np.power(2 * np.pi, X.shape[1]) * np.linalg.det(cov))
+
+        return numerator / denominator

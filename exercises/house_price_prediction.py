@@ -4,6 +4,7 @@ import random
 from matplotlib import pyplot as plt
 from matplotlib.patches import Rectangle
 
+from IMLearn.metrics import mean_square_error
 from IMLearn.utils import split_train_test
 from IMLearn.learners.regressors import LinearRegression
 
@@ -117,16 +118,14 @@ def feature_evaluation(X: pd.DataFrame, y: pd.Series, output_path: str = ".") ->
         # if np.all(np.isin(fvec, [0, 1])):
         #     continue
 
-        pcor = np.cov(fvec, y) / (np.std(fvec) * ydev)
+        pcor = np.cov(fvec, y)[0][1] / (np.std(fvec) * ydev)
 
         plt.scatter(fvec, y)
-        plt.title(f"{feature} to response")
+        plt.title(f"{feature} to response (Pearson Correlation: {pcor})")
         plt.xlabel(f"{feature} values")
         plt.ylabel("response values")
-        plt.legend(loc='best', mode="expand",
-                   handles=[Rectangle((0, 0), 1, 1, fc="w", fill=False, edgecolor='none', linewidth=0)],
-                   labels=[f"Pearson Correlation: {pcor}"])
         plt.savefig(os.path.join(output_path, f"{feature}.png"))
+        plt.show()
 
 
 def play():
@@ -140,14 +139,18 @@ def play():
 
 
 if __name__ == '__main__':
+    # y_true = np.array([279000, 432000, 326000, 333000, 437400, 555950])
+    # y_pred = np.array(
+    #     [199000.37562541, 452589.25533196, 345267.48129011, 345856.57131275, 563867.1347574, 395102.94362135])
+    # print(mean_square_error(y_true, y_pred))
     np.random.seed(0)
     # Question 1 - Load and preprocessing of housing prices dataset
     X, y = load_data("../datasets/kc_house_data.csv")
 
     # Question 2 - Feature evaluation with respect to response
-    # feature_evaluation(X, y, "/home/eran/dumps")
+    feature_evaluation(X, y, "/home/eran/dumps")
 
-    # Question 3 - Split samples into training- and testing sets.
+    # Question 3 - Split samples into training and testing sets.
     X_train, y_train, X_test, y_test = split_train_test(X, y, .75)
 
     # Question 4 - Fit model over increasing percentages of the overall training data
@@ -172,7 +175,7 @@ if __name__ == '__main__':
 
             temp_loss[i] = lr.loss(X_test.to_numpy(), y_test.to_numpy())
         sample_size.append(int(np.floor(p * train_size / 100)))
-        loss.append(np.average(temp_loss))
+        loss.append(np.mean(temp_loss))
         variance.append(np.var(temp_loss))
 
     loss = np.array(loss)
@@ -182,7 +185,7 @@ if __name__ == '__main__':
             go.Scatter(x=sample_size, y=loss+2*variance, fill='tonexty', mode="lines", line=dict(color="lightgrey"), showlegend=False),)
     fig = go.Figure(data=data,
                     layout=go.Layout(
-                        title="are we gettig better?",
+                        title="are we getting better?",
                         xaxis={"title": "sample size"},
                         yaxis={"title": "avg loss with error ribbon"},
                     ))
